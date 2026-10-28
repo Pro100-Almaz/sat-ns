@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", system-ui, sans-serif;
+  /* SAT Emerald — см. docs/brand-guidelines.md */
+  --color-brand: #00ac6b;
+  --color-brand-strong: #008352; /* кнопки и текст: 4.8:1 с белым */
+  --color-brand-dark: #007a4a;   /* текст на brand-soft: 4.9:1 */
+  --color-brand-soft: #e6f7ef;
+  --color-ink: #11161f;
+  --color-muted: #5b6270; /* 5.9:1 на белом, 5.4:1 на canvas */
+  --color-line: #eceef1;
+  --color-canvas: #f4f5f7;
+  --color-warn: #f5a524;
+  --color-bad: #d1303a; /* 4.9:1 на белом */
+  --color-info: #5b6cff;
+}
+
+body { @apply bg-canvas text-ink antialiased; font-variant-numeric: tabular-nums; }
+.display { @apply font-extrabold uppercase leading-[1.05] tracking-tight; }
+/* components layer: utilities like bg-ink on a .card must win */
+@layer components {
+  .card { @apply rounded-3xl bg-white p-4; }
+  .btn { @apply rounded-2xl bg-brand-strong px-4 py-3 font-semibold text-white transition hover:bg-brand-dark active:scale-[.98] disabled:opacity-60; }
+  .chip { @apply rounded-full px-3 py-1 text-[13px] font-semibold; }
+}
+:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; }
+
+/* Motion: ease-out-quart, 200–300 мс, только для смены состояния. */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes sheet { from { transform: translateY(40px); opacity: 0; } }
+@keyframes pop { from { transform: scale(.5); opacity: 0; } }
+.animate-fade { animation: fade .2s ease-out both; }
+.animate-sheet { animation: sheet .3s cubic-bezier(.25, 1, .5, 1) both; }
+.animate-pop { animation: pop .35s cubic-bezier(.25, 1, .5, 1) both; }
+.animate-rise, .stagger > * { animation: rise .32s cubic-bezier(.25, 1, .5, 1) both; }
+.stagger > :nth-child(2) { animation-delay: 40ms; }
+.stagger > :nth-child(3) { animation-delay: 80ms; }
+.stagger > :nth-child(4) { animation-delay: 120ms; }
+.stagger > :nth-child(n+5) { animation-delay: 160ms; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

@@ -1,0 +1,135 @@
+{
+  "primitive": {
+    "color": {
+      "primary": {
+        "50": {
+          "$value": "#E6FFFF",
+          "$type": "color"
+        },
+        "100": {
+          "$value": "#CCFFFF",
+          "$type": "color"
+        },
+        "200": {
+          "$value": "#99FFFF",
+          "$type": "color"
+        },
+        "300": {
+          "$value": "#66FFD1",
+          "$type": "color"
+        },
+        "400": {
+          "$value": "#33DF9E",
+          "$type": "color"
+        },
+        "500": {
+          "$value": "#00AC6B",
+          "$type": "color"
+        },
+        "600": {
+          "$value": "#008C55",
+          "$type": "color"
+        },
+        "700": {
+          "$value": "#00601F",
+          "$type": "color"
+        },
+        "800": {
+          "$value": "#003900",
+          "$type": "color"
+        },
+        "900": {
+          "$value": "#001300",
+          "$type": "color"
+        }
+      },
+      "secondary": {
+        "50": {
+          "$value": "#F7FCFF",
+          "$type": "color"
+        },
+        "100": {
+          "$value": "#DDE2EB",
+          "$type": "color"
+        },
+        "200": {
+          "$value": "#AAAFB8",
+          "$type": "color"
+        },
+        "300": {
+          "$value": "#777C85",
+          "$type": "color"
+        },
+        "400": {
+          "$value": "#444952",
+          "$type": "color"
+        },
+        "500": {
+          "$value": "#11161F",
+          "$type": "color"
+        },
+        "600": {
+          "$value": "#000000",
+          "$type": "color"
+        },
+        "700": {
+          "$value": "#000000",
+          "$type": "color"
+        },
+        "800": {
+          "$value": "#000000",
+          "$type": "color"
+        },
+        "900": {
+          "$value": "#000000",
+          "$type": "color"
+        }
+      },
+      "accent": {
+        "50": {
+          "$value": "#FFFFFF",
+          "$type": "color"
+        },
+        "100": {
+          "$value": "#FFFFF0",
+          "$type": "color"
+        },
+        "200": {
+          "$value": "#FFFFBD",
+          "$type": "color"
+        },
+        "300": {
+          "$value": "#FFFF8A",
+          "$type": "color"
+        },
+        "400": {
+          "$value": "#FFD857",
+          "$type": "color"
+        },
+        "500": {
+          "$value": "#F5A524",
+          "$type": "color"
+        },
+        "600": {
+          "$value": "#CF7F00",
+          "$type": "color"
+        },
+        "700": {
+          "$value": "#A95900",
+          "$type": "color"
+        },
+        "800": {
+          "$value": "#823200",
+          "$type": "color"
+        },
+        "900": {
+          "$value": "#5C0C00",
+          "$type": "color"
+        }
+      }
+    }
+  },
+  "semantic": {},
+  "component": {},
+  "brand": "ClaudeKit Marketing - Primary"
+}

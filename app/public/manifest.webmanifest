@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "Sat-NS — платежи ЖК",
+  "short_name": "Sat-NS",
+  "description": "Оплата коммунальных услуг, бонусы и чат соседей для жителей. Аналитика сборов для управляющей компании.",
+  "start_url": "/#/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f5f7",
+  "theme_color": "#f4f5f7",
+  "lang": "ru",
+  "categories": ["finance", "lifestyle", "utilities"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Оплатить счёт", "short_name": "Оплатить", "url": "/#/app", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Чат подъезда", "short_name": "Соседи", "url": "/#/app/neighbors/entrance", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Кабинет УК", "short_name": "УК", "url": "/#/admin", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

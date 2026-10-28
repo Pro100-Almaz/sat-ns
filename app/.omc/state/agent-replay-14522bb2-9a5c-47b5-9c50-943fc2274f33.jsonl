@@ -1,0 +1,10 @@
+{"t":0,"agent":"ae1a580","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
+{"t":0,"agent":"adbe995","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
+{"t":0,"agent":"a9f7536","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
+{"t":0,"agent":"a8422c3","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
+{"t":0,"agent":"a4fff08","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
+{"t":0,"agent":"a0d69f3","agent_type":"designer","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a0d69f3","agent_type":"designer","event":"agent_stop","success":true,"duration_ms":199680}
+{"t":0,"agent":"a4d340c","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
+{"t":0,"agent":"ab098f1","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
+{"t":0,"agent":"a82013b","agent_type":"unknown","event":"agent_stop","success":true,"duration_ms":0}
