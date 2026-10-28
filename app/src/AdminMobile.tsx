@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { APTS, BUILDINGS, COMPLEXES, ENTRANCES, FLOORS, debts, dueOf, fmtDate, money, monthName, paidOn, periodStats, plural, reps } from './model'
 import { useCtx, useStore } from './store'
-import { Bar, Icon, Sheet, pct } from './ui'
+import { Bar, Icon, Sheet, haptic, hashPart, navigate, pct, useHash } from './ui'
 import { DatePicker, ResetDemo, RolePicker } from './Profile'
 import { AGING_COLORS, CollectionPlot, Dot, FILTERS, PROFILE, aptStatus, kpiItems, mln, overdueCls, sum, useAdminData, useDebtorActions, usePager, Pager } from './adminData'
 
@@ -15,20 +15,22 @@ const above = (rem: string) => ({ bottom: `calc(${rem} + env(safe-area-inset-bot
 export default function AdminMobile() {
   const ctx = useCtx()
   const { now } = useStore()
-  const [view, setView] = useState<View>(() => VIEWS.find(v => v[0] === location.hash.split('/')[2])?.[0] ?? 'overview')
+  // View lives in the hash (#/admin/debtors): the PWA back button returns to the previous section.
+  const part = hashPart(useHash(), 1)
+  const view: View = VIEWS.find(v => v[0] === part)?.[0] ?? 'overview'
   const [cx, setCx] = useState(-1)
   const [pick, setPick] = useState({ c: 0, b: 1 })
   const [sheet, setSheet] = useState<'cx' | 'date' | null>(null)
   const { d, cur } = useAdminData(ctx, cx)
   const act = useDebtorActions(ctx)
-  const go = (v: View) => { setView(v); scrollTo({ top: 0 }) }
+  const go = (v: View) => { navigate(v === 'overview' ? '#/admin' : `#/admin/${v}`); scrollTo({ top: 0 }) }
   const bar = view === 'debtors' && act.picked.size > 0
 
   return (
     <div className="mx-auto min-h-screen max-w-2xl" style={{ paddingBottom: `calc(${bar ? '9.5rem' : '6.5rem'} + env(safe-area-inset-bottom))` }}>
       <header className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-3">
-          <a href="#/" aria-label="На обзор" className="flex shrink-0 items-center gap-2 font-extrabold">
+          <a href="#/" aria-label="На обзор" className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 font-extrabold">
             <img src="/icon.svg" alt="" className="h-8 w-8 rounded-lg" /><span className="hidden min-[430px]:inline">SAT Admin</span>
           </a>
           <button onClick={() => setSheet('cx')} aria-haspopup="dialog" aria-label={`Жилой комплекс: ${cx < 0 ? 'все' : COMPLEXES[cx]}`}
@@ -48,7 +50,7 @@ export default function AdminMobile() {
       <main key={view} className="stagger space-y-3 px-3 pt-3">
         {view === 'overview' && <Overview d={d} cur={cur} cx={cx} setCx={setCx} ctx={ctx} openHouse={(c, b) => { setPick({ c, b }); go('house') }} />}
         {view === 'debtors' && <Debtors d={d} act={act} />}
-        {view === 'house' && <House ctx={ctx} cur={cur} pick={pick} setPick={setPick} />}
+        {view === 'house' && <House ctx={ctx} cur={cur} cx={cx} setCx={setCx} pick={pick} setPick={setPick} />}
         {view === 'profile' && <ProfileView />}
       </main>
 
@@ -227,78 +229,96 @@ function ActionBar({ act, list, all }: { act: ReturnType<typeof useDebtorActions
 
 const chip = (on: boolean) => `h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${on ? 'bg-ink text-white' : 'bg-canvas'}`
 
-function House({ ctx, cur, pick, setPick }: { ctx: ReturnType<typeof useCtx>; cur: number; pick: { c: number; b: number }; setPick: (p: { c: number; b: number }) => void }) {
-  const { c, b } = pick
+// Cells carry the apartment number, so each status colour gets a text colour that stays readable.
+const CELL: Record<string, string> = {
+  'bg-brand': 'bg-brand-strong text-white', 'bg-line': 'bg-line text-ink', 'bg-warn': 'bg-warn text-ink', 'bg-bad': 'bg-bad text-white',
+}
+
+// Дом на телефоне: ЖК берётся из фильтра в шапке, подъезды — по одному, чтобы клетки были крупными.
+function House({ ctx, cur, cx, setCx, pick, setPick }: {
+  ctx: ReturnType<typeof useCtx>; cur: number; cx: number; setCx: (c: number) => void
+  pick: { c: number; b: number }; setPick: (p: { c: number; b: number }) => void
+}) {
+  const c = cx >= 0 ? cx : pick.c, b = pick.b
+  const [e, setE] = useState(1)
   const [sel, setSel] = useState<number | null>(null)
   const house = useMemo(() => APTS.filter(a => a.complex === c && a.building === b), [c, b])
-  const paid = house.filter(a => paidOn(a, cur, ctx) !== null).length
-  const debtors = house.filter(a => debts(a, ctx).length).length
-  const role = (x: { id: number; entrance: number }) => { const r = reps(c, b, x.entrance); return x.id === r.chief.id ? 'старший' : x.id === r.deputy.id ? 'заместитель' : '' }
-  const a = house.find(x => x.id === sel)
+  const entrance = house.filter(a => a.entrance === e)
+  const share = (xs: typeof house) => xs.filter(a => paidOn(a, cur, ctx) !== null).length / xs.length
+  const debtors = entrance.filter(a => debts(a, ctx).length).length
+  const r = reps(c, b, e)
+  const role = (x: { id: number }) => (x.id === r.chief.id ? 'старший' : x.id === r.deputy.id ? 'заместитель' : '')
+  const a = entrance.find(x => x.id === sel)
   const dd = a ? debts(a, ctx) : []
   const info = !a ? 'Нажмите на квартиру, чтобы увидеть жителя и статус.'
     : dd.length ? `долг ${money(sum(dd, x => x.amount))}, просрочка ${Math.max(...dd.map(x => x.days))} дн.`
     : paidOn(a, cur, ctx) !== null ? 'оплачено' : `ждём оплату до ${fmtDate(dueOf(cur))}`
+  const seg = (on: boolean) => `h-11 min-w-0 rounded-xl px-2 text-sm font-semibold transition-colors ${on ? 'bg-white text-ink shadow-sm' : 'text-muted'}`
+
   return (
     <>
-      <section className="card space-y-3 p-5">
+      <section className="card space-y-3 p-4">
         <div role="radiogroup" aria-label="Жилой комплекс" className="flex flex-wrap gap-2">
-          {COMPLEXES.map((n, i) => <button key={n} role="radio" aria-checked={c === i} onClick={() => { setPick({ c: i, b }); setSel(null) }} className={chip(c === i)}>{n}</button>)}
+          {COMPLEXES.map((n, i) => <button key={n} role="radio" aria-checked={c === i} onClick={() => { setCx(i); setPick({ c: i, b }); setSel(null) }} className={chip(c === i)}>{n}</button>)}
         </div>
-        <div role="radiogroup" aria-label="Корпус" className="flex flex-wrap gap-2">
-          {Array.from({ length: BUILDINGS }, (_, i) => <button key={i} role="radio" aria-checked={b === i + 1} onClick={() => { setPick({ c, b: i + 1 }); setSel(null) }} className={chip(b === i + 1)}>Корпус {i + 1}</button>)}
+        <div role="radiogroup" aria-label="Корпус" className="grid grid-cols-2 gap-1 rounded-2xl bg-canvas p-1">
+          {Array.from({ length: BUILDINGS }, (_, i) => (
+            <button key={i} role="radio" aria-checked={b === i + 1} onClick={() => { setPick({ c, b: i + 1 }); setSel(null) }} className={seg(b === i + 1)}>
+              Корпус {i + 1} · {pct(share(APTS.filter(x => x.complex === c && x.building === i + 1)))}
+            </button>
+          ))}
         </div>
-        <p className="text-[15px] text-muted"><b className="text-brand-dark">Оплачено {pct(paid / house.length)}</b> · {debtors} {plural(debtors, 'должник', 'должника', 'должников')}</p>
+        <div role="radiogroup" aria-label="Подъезд" className="grid grid-cols-3 gap-1 rounded-2xl bg-canvas p-1">
+          {Array.from({ length: ENTRANCES }, (_, i) => (
+            <button key={i} role="radio" aria-checked={e === i + 1} onClick={() => { setE(i + 1); setSel(null) }} className={`${seg(e === i + 1)} leading-tight`}>
+              Подъезд {i + 1}<span className="block text-xs font-normal">{pct(share(house.filter(x => x.entrance === i + 1)))} оплатили</span>
+            </button>
+          ))}
+        </div>
       </section>
 
-      <section className="card p-5">
-        <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-3">
-          <div className="grid auto-rows-[2rem] gap-y-1.5 text-right text-xs text-muted">
-            <span className="h-5" />{Array.from({ length: FLOORS }, (_, i) => <span key={i} className="flex items-center justify-end">{FLOORS - i}</span>)}
-          </div>
-          {Array.from({ length: ENTRANCES }, (_, e) => (
-            <div key={e} className="grid min-w-0 gap-y-1.5">
-              <span className="h-5 text-center text-xs font-semibold text-muted">Подъезд {e + 1}</span>
-              {Array.from({ length: FLOORS }, (_, i) => FLOORS - i).map(f => (
-                <div key={f} className="grid h-8 grid-cols-4 gap-1">
-                  {house.filter(x => x.entrance === e + 1 && x.floor === f).map(x => (
-                    <button key={x.id} onClick={() => setSel(x.id)} aria-label={`кв. ${x.number}`} aria-pressed={sel === x.id}
-                      className={`rounded-md transition ${aptStatus(x, ctx, cur)} ${sel === x.id ? 'ring-2 ring-ink ring-offset-1' : ''}`} />
-                  ))}
-                </div>
-              ))}
+      <section className="card p-4" aria-label={`Подъезд ${e}`}>
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-[17px] font-bold">Подъезд {e}</h2>
+          <span className="text-sm text-muted"><b className="text-brand-dark">{pct(share(entrance))}</b> оплатили · {debtors} {plural(debtors, 'должник', 'должника', 'должников')}</span>
+        </div>
+        <ul className="mt-3 space-y-2">
+          {([[r.chief, 'Старший по подъезду'], [r.deputy, 'Заместитель']] as const).map(([x, l]) => (
+            <li key={x.id} className="flex items-center gap-3 rounded-2xl bg-canvas px-3 py-2">
+              <span className="min-w-0 flex-1"><b className="block truncate">{x.owner}</b><span className="text-sm text-muted">{l} · кв. {x.number}</span></span>
+              <a href={`tel:${x.phone.replace(/\s/g, '')}`} className="flex h-11 shrink-0 items-center rounded-xl bg-white px-3 text-sm font-semibold text-brand-strong">Позвонить</a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-4 space-y-1.5" role="grid" aria-label="Квартиры по этажам">
+          {Array.from({ length: FLOORS }, (_, i) => FLOORS - i).map(f => (
+            <div key={f} role="row" className="grid grid-cols-[1.5rem_repeat(4,minmax(0,1fr))] items-center gap-1.5">
+              <span className="text-right text-xs text-muted" aria-label={`${f} этаж`}>{f}</span>
+              {entrance.filter(x => x.floor === f).map(x => {
+                const st = aptStatus(x, ctx, cur)
+                return (
+                  <button key={x.id} role="gridcell" onClick={() => { setSel(x.id); haptic() }} aria-pressed={sel === x.id}
+                    aria-label={`кв. ${x.number}${role(x) ? `, ${role(x)}` : ''}`}
+                    className={`relative flex h-11 items-center justify-center gap-0.5 rounded-xl text-sm font-bold transition active:scale-95 ${CELL[st]} ${sel === x.id ? 'ring-2 ring-ink ring-offset-2' : ''}`}>
+                    {x.number}
+                    {st === 'bg-bad' || st === 'bg-warn' ? <span aria-hidden>!</span> : st === 'bg-brand' ? <Icon name="check" className="h-3.5 w-3.5" /> : null}
+                    {role(x) && <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-ink text-xs text-white" aria-hidden>{role(x) === 'старший' ? 'С' : 'З'}</span>}
+                  </button>
+                )
+              })}
             </div>
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-x-3.5 gap-y-1.5 text-[13px] text-muted">
-          {[['bg-brand', 'оплачено'], ['bg-line', `ждём до ${fmtDate(dueOf(cur))}`], ['bg-warn', 'долг до 30 дн.'], ['bg-bad', 'долг 30+ дн.']].map(([cl, l]) => (
+          {[['bg-brand-strong', 'оплачено ✓'], ['bg-line', `ждём до ${fmtDate(dueOf(cur))}`], ['bg-warn', 'долг до 30 дн. !'], ['bg-bad', 'долг 30+ дн. !']].map(([cl, l]) => (
             <span key={l} className="flex items-center gap-1.5"><span className={`h-3 w-3 rounded-sm ${cl}`} />{l}</span>
           ))}
+          <span className="flex items-center gap-1.5"><span className="grid h-5 w-5 place-items-center rounded-full bg-ink text-xs text-white">С</span>старший / зам.</span>
         </div>
         <div role="status" className="mt-4 rounded-2xl bg-canvas px-4 py-3 text-[15px]">
           {a ? <><b>кв. {a.number} · {a.owner}</b>{role(a) && <span className="chip ml-2 bg-brand-soft py-0.5 text-brand-dark">{role(a)}</span>}<br /><span className={dd.length ? 'text-bad' : 'text-muted'}>{info}</span></> : <span className="text-muted">{info}</span>}
         </div>
-      </section>
-
-      <section className="card p-5" aria-labelledby="reps-h">
-        <h2 id="reps-h" className="text-[17px] font-bold">Представители подъездов</h2>
-        <p className="mt-1 text-sm text-muted">Старшие собирают обращения жильцов и передают их в УК.</p>
-        <ul className="mt-3 divide-y divide-line">
-          {Array.from({ length: ENTRANCES }, (_, e) => {
-            const r = reps(c, b, e + 1)
-            return (
-              <li key={e} className="py-3 first:pt-0 last:pb-0">
-                <div className="text-sm font-semibold text-muted">Подъезд {e + 1}</div>
-                {([[r.chief, 'Старший'], [r.deputy, 'Заместитель']] as const).map(([x, l]) => (
-                  <div key={x.id} className="mt-1.5 flex items-center justify-between gap-3">
-                    <span className="min-w-0"><b>{x.owner}</b> <span className="text-sm text-muted">· {l.toLowerCase()} · кв. {x.number}</span></span>
-                    <a href={`tel:${x.phone.replace(/\s/g, '')}`} className="shrink-0 rounded-xl bg-canvas px-3 py-2 text-sm font-semibold text-brand-strong">Позвонить</a>
-                  </div>
-                ))}
-              </li>
-            )
-          })}
-        </ul>
       </section>
     </>
   )

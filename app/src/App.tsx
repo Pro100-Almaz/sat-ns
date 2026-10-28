@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from 're
 import Resident from './Resident'
 import { useCtx } from './store'
 import { APTS, channel, monthOf, paidOn, periodStats } from './model'
-import { Icon, Logo, Phone, SlideLabel, pct } from './ui'
+import { Icon, Logo, Phone, SlideLabel, pct, useHash } from './ui'
 
 // Recharts lives only in the admin bundle, so the resident app stays light on phones.
 const Admin = lazy(() => import('./Admin'))
@@ -10,11 +10,6 @@ const Admin = lazy(() => import('./Admin'))
 // Inside the phone mockup the app runs in an iframe: no demo bar, no nested phone.
 const EMBED = window.self !== window.top
 
-const useHash = () => {
-  const [h, setH] = useState(location.hash)
-  useEffect(() => { const f = () => setH(location.hash); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f) }, [])
-  return h
-}
 const WIDE = matchMedia('(min-width: 1024px)')
 const useWide = () => {
   const q = WIDE

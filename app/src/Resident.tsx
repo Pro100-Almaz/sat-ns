@@ -6,7 +6,7 @@ import {
   type Ctx,
 } from './model'
 import { set, useCtx, useStore, type Note } from './store'
-import { Bar, Icon, Sheet, pct } from './ui'
+import { Bar, Icon, Sheet, haptic, hashPart, navigate, pct, useHash } from './ui'
 import { DatePicker, ResetDemo, RolePicker, Section } from './Profile'
 import Neighbors from './Neighbors'
 
@@ -70,13 +70,14 @@ export default function Resident() {
   const { notes, seen: chatSeen } = useStore()
   const b = useBill(ctx)
   useReminders(ctx, b)
-  const [tab, setTab] = useState<Tab>(() => (TABS.find(t => t[0] === location.hash.split('/')[2])?.[0] ?? 'home'))
+  const h = useHash()
+  const tab: Tab = TABS.find(t => t[0] === hashPart(h, 1))?.[0] ?? 'home'
   const [paying, setPaying] = useState(false)
   const [bell, setBell] = useState(false)
   const [seen, setSeen] = useState(notes.length)
   const unread = notes.length - seen
   const balance = useBalance(ctx)
-  const go = (t: Tab) => { setTab(t); scrollTo({ top: 0 }) }
+  const go = (t: Tab) => { navigate(t === 'home' ? '#/app' : `#/app/${t}`); scrollTo({ top: 0 }) }
 
   return (
     <div className="mx-auto min-h-screen max-w-md pb-28">
@@ -249,9 +250,11 @@ function AutopayToggle({ now, onDark = false }: { now: number; onDark?: boolean 
 
 function Switch({ on, onChange, label, onDark = false }: { on: boolean; onChange: (on: boolean) => void; label: string; onDark?: boolean }) {
   return (
-    <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
-      className={`h-8 w-[52px] shrink-0 rounded-full p-1 transition-colors duration-200 ${onDark ? (on ? 'bg-white/90' : 'bg-white/30') : on ? 'bg-brand-strong' : 'bg-line'}`}>
-      <span className={`block h-6 w-6 rounded-full shadow transition-transform duration-200 ease-out ${onDark && on ? 'bg-brand-strong' : 'bg-white'} ${on ? 'translate-x-5' : ''}`} />
+    <button role="switch" aria-checked={on} aria-label={label} onClick={() => { haptic(); onChange(!on) }}
+      className="-m-1.5 grid h-11 w-16 shrink-0 place-items-center rounded-full">
+      <span className={`block h-8 w-[52px] rounded-full p-1 transition-colors duration-200 ${onDark ? (on ? 'bg-white/90' : 'bg-white/30') : on ? 'bg-brand-strong' : 'bg-line'}`}>
+        <span className={`block h-6 w-6 rounded-full shadow transition-transform duration-200 ease-out ${onDark && on ? 'bg-brand-strong' : 'bg-white'} ${on ? 'translate-x-5' : ''}`} />
+      </span>
     </button>
   )
 }
@@ -360,7 +363,7 @@ function Payments({ ctx }: { ctx: Ctx }) {
   )
 }
 
-const FILTERS = [['last5', 'Последние 5'], ['m6', '6 месяцев'], ['m12', 'Год'], ['custom', 'Период']] as const
+const FILTERS = [['last5', 'Недавние'], ['m6', '6 мес.'], ['m12', 'Год'], ['custom', 'Период']] as const
 type Filter = typeof FILTERS[number][0]
 const toMonth = (mk: number) => `${Math.floor(mk / 12)}-${String(mk % 12 + 1).padStart(2, '0')}`
 const fromMonth = (v: string) => { const [y, m] = v.split('-').map(Number); return y * 12 + m - 1 }
@@ -379,10 +382,10 @@ function PayHistory({ ctx }: { ctx: Ctx }) {
   const month = 'h-11 w-full rounded-xl border-2 border-line bg-white px-3 font-semibold focus:border-brand focus:outline-none'
   return (
     <Section title="История оплат">
-      <div role="tablist" aria-label="Период" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div role="tablist" aria-label="Период" className="grid grid-cols-4 gap-1 rounded-2xl bg-canvas p-1">
         {FILTERS.map(([f, label]) => (
           <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)}
-            className={`h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors ${filter === f ? 'bg-ink text-white' : 'bg-canvas hover:bg-line'}`}>
+            className={`h-11 min-w-0 rounded-xl px-1 text-sm font-semibold transition-colors ${filter === f ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'}`}>
             {label}
           </button>
         ))}
@@ -520,7 +523,7 @@ function Profile() {
           <li className="flex items-center justify-between gap-3 pt-3">
             <span>Push-напоминания</span>
             {perm === 'granted' ? <span className="font-semibold text-brand-dark">включены</span>
-              : perm === 'default' ? <button onClick={enable} className="rounded-xl bg-brand-soft px-3.5 py-2 font-semibold text-brand-dark">Включить</button>
+              : perm === 'default' ? <button onClick={enable} className="h-11 rounded-xl bg-brand-soft px-4 font-semibold text-brand-dark">Включить</button>
               : <span className="text-right text-sm text-muted">{perm === 'denied' ? 'запрещены в браузере' : 'на iPhone: «На экран Домой»'}</span>}
           </li>
         </ul>
@@ -534,15 +537,20 @@ const METHODS = ['Kaspi Pay', 'Карта •• 4421', 'Apple Pay']
 
 function PaySheet({ b, balance, onClose }: { b: Bill; balance: number; onClose: () => void }) {
   const [method, setMethod] = useState(0)
-  const [usePts, setUsePts] = useState(balance > 0)
+  const [usePts, setUsePts] = useState(false)
   const [step, setStep] = useState<'choose' | 'wait' | 'done'>('choose')
   const [snap] = useState(b) // freeze amounts: after payment the bill becomes empty
-  const used = usePts ? Math.min(balance, snap.total) : 0, toPay = snap.total - used, bonus = bonusFor(snap)
+  const bonus = bonusFor(snap)
+  // Receipt is frozen at pay time: afterwards the balance changes (spent + new bonus) and must not alter it.
+  const [receipt, setReceipt] = useState<{ used: number; toPay: number } | null>(null)
+  const used = receipt?.used ?? (usePts ? Math.min(balance, snap.total) : 0), toPay = receipt?.toPay ?? snap.total - used
   const pay = () => {
+    setReceipt({ used, toPay })
     setStep('wait')
     setTimeout(() => {
       set(s => ({ spent: s.spent + used, myPays: { ...s.myPays, ...Object.fromEntries(snap.items.map(i => [i.mk, s.now])) } }))
       setStep('done')
+      haptic(30)
     }, 1200)
   }
   if (step === 'done')
@@ -570,7 +578,7 @@ function PaySheet({ b, balance, onClose }: { b: Bill; balance: number; onClose: 
       {balance > 0 && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl bg-warn/10 p-3.5">
           <Icon name="coin" className="h-6 w-6 shrink-0 text-warn" />
-          <div className="flex-1"><div className="font-semibold">Списать баллы</div><div className="text-sm text-muted">Доступно {points(balance)}</div></div>
+          <div className="flex-1"><div className="font-semibold">Списать баллы</div><div className="text-sm text-muted">{usePts ? `Списываем ${points(used)}` : `Доступно ${points(balance)} — до −${money(Math.min(balance, snap.total))}`}</div></div>
           <Switch on={usePts} label="Списать баллы" onChange={setUsePts} />
         </div>
       )}

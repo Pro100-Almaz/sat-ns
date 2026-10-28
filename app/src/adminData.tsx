@@ -5,7 +5,7 @@ import {
   type Apt, type Ctx, type Profile,
 } from './model'
 import { set, useStore } from './store'
-import { Icon, pct } from './ui'
+import { Icon, haptic, pct } from './ui'
 
 // Общие данные и логика кабинета менеджера: используют и десктоп (Admin), и телефон (AdminMobile).
 
@@ -70,6 +70,7 @@ export function useDebtorActions(ctx: Ctx) {
   const responded = sum(reminders, r => r.ids.filter(id => { const s = ctx.settle.get(id); return s !== undefined && s > r.day && s <= Math.min(ctx.now, r.day + 3) }).length)
   const send = (ids: number[]) => {
     if (!ids.length) return
+    haptic(20)
     set(s => ({ reminders: [...s.reminders, { day: s.now, ids }] }))
     setPicked(new Set())
     setToast(`Push отправлен: ${ids.length} ${plural(ids.length, 'житель', 'жителя', 'жителей')}. Сдвиньте дату на +3 дня, чтобы увидеть эффект.`)

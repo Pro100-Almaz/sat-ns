@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { APTS, COMPLEXES, ME, fmtDate, neighborsOf, reps, shortName, type Apt } from './model'
 import { set, useStore, type Msg } from './store'
-import { Icon } from './ui'
+import { Icon, goBack, haptic, hashPart, navigate, useHash } from './ui'
 
 // Соседи: старший по подъезду и заместитель, чат подъезда, личные сообщения и реакции.
 // Сид-сообщения генерируются здесь; в store попадает только то, что появилось в демо.
@@ -48,12 +48,13 @@ const REPLIES: Record<string, string[]> = {
 
 export default function Neighbors({ now }: { now: number }) {
   const h = useHouse()
-  // Deep link: #/app/neighbors/entrance opens the entrance chat.
-  const [open, setOpen] = useState<string | null>(() => (location.hash.split('/')[3] === ENTRANCE ? ENTRANCE : null))
+  // The open thread lives in the hash (#/app/neighbors/entrance, …/dm-123): back button and deep links work.
+  const t = hashPart(useHash(), 2)
+  const open = t === ENTRANCE || (/^dm-\d+$/.test(t) && APTS[+t.slice(3)]) ? t : null
   const { seen } = useStore()
-  const go = (t: string) => { setOpen(t); scrollTo({ top: 0 }) }
+  const go = (t: string) => { navigate(`#/app/neighbors/${t}`); scrollTo({ top: 0 }) }
   useEffect(() => { if (open && !seen.includes(open)) set(s => ({ seen: [...s.seen, open] })) }, [open, seen])
-  if (open) return <Thread thread={open} h={h} now={now} onBack={() => setOpen(null)} />
+  if (open) return <Thread thread={open} h={h} now={now} onBack={() => goBack('#/app/neighbors')} />
   return <Overview h={h} now={now} go={go} />
 }
 
@@ -117,8 +118,8 @@ function Overview({ h, now, go }: { h: House; now: number; go: (t: string) => vo
                 <span className="block text-sm text-muted">{a.floor} этаж · кв. {a.number}</span>
               </span>
               <button onClick={() => sayHi(a)} aria-label={`Помахать: ${a.owner}`}
-                className={`grid h-11 w-11 place-items-center rounded-full text-lg transition ${wave === a.id ? 'animate-pop bg-brand-soft' : 'bg-canvas active:scale-95'}`}>
-                {wave === a.id ? '✓' : '👋'}
+                className={`grid h-11 w-11 place-items-center rounded-full transition ${wave === a.id ? 'animate-pop bg-brand-soft text-brand-dark' : 'bg-canvas text-[#b7791f] active:scale-95'}`}>
+                <Icon name={wave === a.id ? 'check' : 'hand'} className="h-5 w-5" />
               </button>
               <button onClick={() => go(dm(a))} className="grid h-11 w-11 place-items-center rounded-full bg-canvas text-ink transition active:scale-95" aria-label={`Написать: ${a.owner}`}>
                 <Icon name="chat" className="h-5 w-5" />
@@ -181,6 +182,7 @@ function Thread({ thread, h, now, onBack }: { thread: string; h: House; now: num
       return { myReacts: { ...s.myReacts, [id]: cur.includes(e) ? cur.filter(x => x !== e) : [...cur, e] } }
     })
     setPicker(null)
+    haptic()
   }
   const title = peer ? peer.owner : `Чат подъезда ${ME.entrance}`
   const sub = peer ? (peer === h.chief ? 'Старший по подъезду' : peer === h.deputy ? 'Заместитель старшего' : `${peer.floor} этаж · кв. ${peer.number}`) : `${h.all.length + 1} квартир · только жильцы подъезда`
@@ -221,15 +223,15 @@ function Thread({ thread, h, now, onBack }: { thread: string; h: House; now: num
                     <div className="animate-pop mt-1 flex gap-1 rounded-full bg-white p-1 shadow-lg" role="group" aria-label="Выберите реакцию">
                       {EMOJI.map(e => (
                         <button key={e} onClick={() => react(m.id, e)} aria-pressed={(myReacts[m.id] ?? []).includes(e)}
-                          className={`grid h-10 w-10 place-items-center rounded-full text-xl transition active:scale-90 ${(myReacts[m.id] ?? []).includes(e) ? 'bg-brand-soft' : ''}`}>{e}</button>
+                          className={`grid h-11 w-11 place-items-center rounded-full text-xl transition active:scale-90 ${(myReacts[m.id] ?? []).includes(e) ? 'bg-brand-soft' : ''}`}>{e}</button>
                       ))}
                     </div>
                   )}
                   {shown.length > 0 && (
-                    <div className="-mt-1.5 flex flex-wrap gap-1 px-2">
+                    <div className="-mt-2 flex flex-wrap gap-1.5 px-2">
                       {shown.map(([e, n]) => (
                         <button key={e} onClick={() => react(m.id, e)} aria-label={`${e} ${n}`}
-                          className={`animate-pop flex h-7 items-center gap-1 rounded-full border px-2 text-[13px] font-semibold shadow-sm ${(myReacts[m.id] ?? []).includes(e) ? 'border-brand-strong bg-brand-soft text-brand-dark' : 'border-line bg-white'}`}>
+                          className={`animate-pop flex h-9 items-center gap-1 rounded-full border px-2.5 text-sm font-semibold shadow-sm ${(myReacts[m.id] ?? []).includes(e) ? 'border-brand-strong bg-brand-soft text-brand-dark' : 'border-line bg-white'}`}>
                           {e} {n}
                         </button>
                       ))}

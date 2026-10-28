@@ -1,4 +1,19 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+
+// ---- Navigation: screens live in the hash so the PWA back button and deep links work ----
+export function useHash() {
+  const [h, setH] = useState(location.hash)
+  useEffect(() => { const f = () => setH(location.hash); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f) }, [])
+  return h
+}
+// Segment n of '#/app/neighbors/entrance' → ['app', 'neighbors', 'entrance'][n].
+export const hashPart = (h: string, n: number) => h.replace(/^#\/?/, '').split('/')[n] ?? ''
+let navigated = false // did we push an entry ourselves (so history.back() stays inside the app)?
+export const navigate = (hash: string) => { if (location.hash !== hash) { navigated = true; location.hash = hash } }
+export const goBack = (fallback: string) => (navigated ? history.back() : location.replace(fallback))
+
+// Short haptic tick for key actions (Android; a no-op elsewhere).
+export const haptic = (ms = 12) => { try { navigator.vibrate?.(ms) } catch { /* unsupported */ } }
 
 export const Logo = ({ name = 'Sat-NS' }: { name?: string }) => (
   <div className="flex items-center gap-2 font-extrabold">
@@ -43,6 +58,7 @@ const PATHS = {
   send: 'M22 2 11 13M22 2l-7 20-4-9-9-4z',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
   smile: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01',
+  hand: 'M18 11V6a2 2 0 0 0-4 0v5m0-1V4a2 2 0 0 0-4 0v2m0 4.5V6a2 2 0 0 0-4 0v8m12-6a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15',
   flame: 'M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-6 6-6 10-1-1-2-2-2-4-1 2-1 4-1 6 0 4 3 7 7 7',
 }
 export const Icon = ({ name, className = 'h-5 w-5' }: { name: keyof typeof PATHS; className?: string }) => (
@@ -70,6 +86,16 @@ export function Sheet({ onClose, title, children }: { onClose: () => void; title
     box.current?.focus()
     return () => prev?.focus()
   }, [])
+  // System back button closes the sheet instead of leaving the screen.
+  // Pushed on the next tick so React StrictMode's mount→unmount→mount doesn't leave a stray entry.
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    let pushed = false, popped = false
+    const onPop = () => { popped = true; close.current() }
+    const t = setTimeout(() => { history.pushState({ sheet: true }, ''); pushed = true; addEventListener('popstate', onPop) })
+    return () => { clearTimeout(t); removeEventListener('popstate', onPop); if (pushed && !popped) history.back() }
+  }, [])
   return (
     <div className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-ink/40 sm:items-center" onClick={onClose}>
       <div ref={box} tabIndex={-1} role="dialog" aria-modal aria-label={title} onClick={e => e.stopPropagation()}
@@ -77,7 +103,7 @@ export function Sheet({ onClose, title, children }: { onClose: () => void; title
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line sm:hidden" />
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-extrabold">{title}</h2>
-          <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-canvas text-muted transition hover:text-ink" aria-label="Закрыть"><Icon name="x" /></button>
+          <button onClick={onClose} className="-mr-1 grid h-11 w-11 place-items-center rounded-full bg-canvas text-muted transition hover:text-ink" aria-label="Закрыть"><Icon name="x" /></button>
         </div>
         {children}
       </div>

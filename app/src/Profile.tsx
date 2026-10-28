@@ -105,7 +105,7 @@ export function DatePicker() {
       <div className="mt-3 flex flex-wrap gap-2">
         {presets.map(([label, d]) => (
           <button key={label} onClick={() => set({ now: d })}
-            className={`rounded-full px-3.5 py-2 text-[13px] font-semibold transition ${now === d ? 'bg-ink text-white' : 'bg-canvas hover:bg-line'}`}>
+            className={`h-11 rounded-full px-4 text-sm font-semibold transition ${now === d ? 'bg-ink text-white' : 'bg-canvas hover:bg-line'}`}>
             {label}
           </button>
         ))}
