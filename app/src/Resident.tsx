@@ -146,14 +146,14 @@ function Home({ ctx, b, onPay, go }: { ctx: Ctx; b: Bill; onPay: () => void; go:
 }
 
 function BillCard({ b, onPay, ctx }: { b: Bill; onPay: () => void; ctx: Ctx }) {
-  const { autopay } = useStore()
   if (!b.items.length)
     return (
       <section className="card bg-brand-strong p-6 text-white">
         <div className="flex items-center gap-2 font-semibold"><span className="animate-pop grid h-6 w-6 place-items-center rounded-full bg-white/20"><Icon name="check" className="h-4 w-4" /></span> Счёт за {monthLower(b.cur)} оплачен</div>
         <div className="mt-3 text-[40px] font-extrabold leading-none">{money(b.bill)}</div>
         <div className="mt-2 text-[15px] text-white/90">{fmtDate(b.paidAt!)}{b.paidAt! <= b.due ? ' — вовремя, спасибо!' : ''}</div>
-        <div className="mt-5 rounded-2xl bg-white/15 px-4 py-3 text-[15px]">Следующий счёт — {fmtDate(issueOf(b.cur + 1))}{autopay !== null ? ', спишется автоматически' : ''}</div>
+        <div className="mt-5 rounded-2xl bg-white/15 px-4 py-3 text-[15px]">Следующий счёт придёт {fmtDate(issueOf(b.cur + 1))}</div>
+        <div className="mt-3 rounded-2xl bg-white/15 px-4 py-3"><AutopayToggle now={ctx.now} onDark /></div>
       </section>
     )
   const tone = b.overdue ? 'bad' : b.daysLeft <= 5 ? 'warn' : 'brand'
@@ -186,10 +186,7 @@ function BillCard({ b, onPay, ctx }: { b: Bill; onPay: () => void; ctx: Ctx }) {
           </div>
         )}
       {!b.overdue && b.daysLeft >= EARLY_DAYS && <p className="mt-2 text-center text-[13px] font-semibold text-[#8a5a00]">Ранняя оплата: двойные баллы ещё {days(b.daysLeft - EARLY_DAYS + 1)}</p>}
-      <div className="mt-5 flex items-center gap-3 border-t border-line pt-4">
-        <div className="flex-1"><div className="font-semibold">Автоплатёж</div><div className="text-sm text-muted">Спишем 20-го — без просрочек</div></div>
-        <Switch on={autopay !== null} label="Автоплатёж" onChange={on => set({ autopay: on ? ctx.now : null })} />
-      </div>
+      <div className="mt-5 border-t border-line pt-4"><AutopayToggle now={ctx.now} /></div>
       <PenaltyCalc b={b} />
     </section>
   )
@@ -235,11 +232,26 @@ function ChallengeTile({ ctx, b }: { ctx: Ctx; b: Bill }) {
   )
 }
 
-function Switch({ on, onChange, label }: { on: boolean; onChange: (on: boolean) => void; label: string }) {
+// Один переключатель автоплатежа для карточки счёта, оплаченного счёта и профиля.
+function AutopayToggle({ now, onDark = false }: { now: number; onDark?: boolean }) {
+  const { autopay } = useStore()
+  const on = autopay !== null
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex-1">
+        <div className="font-semibold">Автоплатёж</div>
+        <div className={`text-sm ${onDark ? 'text-white/85' : 'text-muted'}`}>{on ? `Включён с ${fmtDate(autopay)} · спишем 20-го с карты •• 4421` : 'Спишем 20-го — без просрочек и пени'}</div>
+      </div>
+      <Switch on={on} label={on ? 'Выключить автоплатёж' : 'Включить автоплатёж'} onDark={onDark} onChange={v => set({ autopay: v ? now : null })} />
+    </div>
+  )
+}
+
+function Switch({ on, onChange, label, onDark = false }: { on: boolean; onChange: (on: boolean) => void; label: string; onDark?: boolean }) {
   return (
     <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
-      className={`h-8 w-[52px] shrink-0 rounded-full p-1 transition-colors duration-200 ${on ? 'bg-brand' : 'bg-line'}`}>
-      <span className={`block h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ease-out ${on ? 'translate-x-5' : ''}`} />
+      className={`h-8 w-[52px] shrink-0 rounded-full p-1 transition-colors duration-200 ${onDark ? (on ? 'bg-white/90' : 'bg-white/30') : on ? 'bg-brand-strong' : 'bg-line'}`}>
+      <span className={`block h-6 w-6 rounded-full shadow transition-transform duration-200 ease-out ${onDark && on ? 'bg-brand-strong' : 'bg-white'} ${on ? 'translate-x-5' : ''}`} />
     </button>
   )
 }
@@ -483,7 +495,7 @@ function Bonus({ ctx, b, balance }: { ctx: Ctx; b: Bill; balance: number }) {
 }
 
 function Profile() {
-  const { autopay } = useStore()
+  const { now } = useStore()
   const [perm, setPerm] = useState(pushSupported() ? Notification.permission : 'unsupported')
   const enable = async () => {
     const p = await Notification.requestPermission()
@@ -504,7 +516,7 @@ function Profile() {
       <DatePicker />
       <Section title="Оплата и уведомления">
         <ul className="divide-y divide-line">
-          <li className="flex items-center justify-between gap-3 pb-3"><span>Автоплатёж</span><span className="font-semibold">{autopay !== null ? 'включён, 20-го' : 'выключен'}</span></li>
+          <li className="pb-3"><AutopayToggle now={now} /></li>
           <li className="flex items-center justify-between gap-3 pt-3">
             <span>Push-напоминания</span>
             {perm === 'granted' ? <span className="font-semibold text-brand-dark">включены</span>
