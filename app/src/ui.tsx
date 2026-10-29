@@ -12,6 +12,23 @@ let navigated = false // did we push an entry ourselves (so history.back() stays
 export const navigate = (hash: string) => { if (location.hash !== hash) { navigated = true; location.hash = hash } }
 export const goBack = (fallback: string) => (navigated ? history.back() : location.replace(fallback))
 
+// ---- PWA install: Android gives us a prompt event, iOS needs the Share → «На экран Домой» hint ----
+type InstallEvent = Event & { prompt: () => Promise<void> }
+let deferred: InstallEvent | null = null
+const installSubs = new Set<() => void>()
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e as InstallEvent; installSubs.forEach(f => f()) })
+addEventListener('appinstalled', () => { deferred = null; installSubs.forEach(f => f()) })
+export function useInstall() {
+  const [, tick] = useState(0)
+  useEffect(() => { const f = () => tick(n => n + 1); installSubs.add(f); return () => { installSubs.delete(f) } }, [])
+  const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent)
+  return {
+    standalone, ios, canPrompt: !!deferred,
+    install: async () => { if (!deferred) return; await deferred.prompt(); deferred = null; tick(n => n + 1) },
+  }
+}
+
 // Short haptic tick for key actions (Android; a no-op elsewhere).
 export const haptic = (ms = 12) => { try { navigator.vibrate?.(ms) } catch { /* unsupported */ } }
 
@@ -102,13 +119,19 @@ export function Sheet({ onClose, title, children }: { onClose: () => void; title
         className="animate-sheet max-h-[92vh] outline-none w-full max-w-md overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:rounded-[28px]">
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line sm:hidden" />
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-extrabold">{title}</h2>
+          <h2 className="text-xl font-bold">{title}</h2>
           <button onClick={onClose} className="-mr-1 grid h-11 w-11 place-items-center rounded-full bg-canvas text-muted transition hover:text-ink" aria-label="Закрыть"><Icon name="x" /></button>
         </div>
         {children}
       </div>
     </div>
   )
+}
+
+// Same palette as the @theme tokens in index.css, for places that need raw values (Recharts, inline styles).
+export const COLORS = {
+  brand: '#6daf8c', brandStrong: '#2e7254', ink: '#212c28', muted: '#5b6662', line: '#e2e8e5', canvas: '#f3f7f5',
+  charged: '#d3dcd8', aging: ['#e3ba79', '#d59466', '#b86656', '#8d4540'], info: '#6079b0',
 }
 
 export const pct = (x: number) => `${Math.round(x * 100)}%`

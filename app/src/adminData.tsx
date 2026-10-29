@@ -5,22 +5,22 @@ import {
   type Apt, type Ctx, type Profile,
 } from './model'
 import { set, useStore } from './store'
-import { Icon, haptic, pct } from './ui'
+import { COLORS, Icon, haptic, pct } from './ui'
 
 // Общие данные и логика кабинета менеджера: используют и десктоп (Admin), и телефон (AdminMobile).
 
 export const PROFILE: Record<Profile, [string, string]> = {
   punctual: ['Обычно вовремя', 'bg-brand-soft text-brand-dark'],
-  late: ['Опаздывает', 'bg-warn/15 text-[#8a5a00]'],
-  debtor: ['Хронический', 'bg-bad/10 text-bad'],
+  late: ['Опаздывает', 'bg-warn/25 text-warn-ink'],
+  debtor: ['Хронический', 'bg-bad/10 text-bad-ink'],
 }
-export const AGING_COLORS = ['#f5a524', '#f08c2e', '#d1303a', '#9e1f27']
-const AXIS = { tickLine: false, axisLine: false, fontSize: 12, tick: { fill: '#5b6270' } } as const
-const TOOLTIP = { borderRadius: 12, border: '1px solid #eceef1', boxShadow: '0 8px 24px -12px rgba(17,22,31,.25)', fontSize: 13 }
+export const AGING_COLORS = COLORS.aging
+const AXIS = { tickLine: false, axisLine: false, fontSize: 12, tick: { fill: COLORS.muted } } as const
+const TOOLTIP = { borderRadius: 12, border: `1px solid ${COLORS.line}`, boxShadow: '0 8px 24px -12px rgba(33,44,40,.2)', fontSize: 13 }
 export const mln = (n: number) => `${(n / 1e6).toFixed(1)} млн ₸`
 export const sum = <T,>(xs: T[], f: (x: T) => number) => xs.reduce((t, x) => t + f(x), 0)
 export const FILTERS = [['Все', 0], ['30+ дн.', 30], ['90+ дн.', 90]] as const
-export const overdueCls = (days: number) => (days > 90 ? 'bg-bad text-white' : days > 30 ? 'bg-bad/10 text-bad' : 'bg-warn/15 text-[#8a5a00]')
+export const overdueCls = (days: number) => (days > 90 ? 'bg-bad/20 text-bad-ink font-bold' : days > 30 ? 'bg-bad/10 text-bad-ink' : 'bg-warn/25 text-warn-ink')
 
 export function debtRows(apts: Apt[], ctx: Ctx) {
   return apts.flatMap(a => {
@@ -101,14 +101,14 @@ export function CollectionPlot({ d }: { d: Data }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={d.months.map(m => ({ name: monthShort(m.mk), 'Начислено': m.charged / 1e6, 'Собрано': m.collected / 1e6, 'В срок, %': m.onTime / m.count * 100 }))} barGap={1} margin={{ top: 4, right: 0, left: -8, bottom: 0 }}>
-        <CartesianGrid vertical={false} stroke="#eceef1" />
+        <CartesianGrid vertical={false} stroke={COLORS.line} />
         <XAxis dataKey="name" {...AXIS} />
         <YAxis yAxisId="l" {...AXIS} width={30} />
         <YAxis yAxisId="r" orientation="right" domain={[0, 100]} {...AXIS} width={44} unit="%" />
-        <Tooltip cursor={{ fill: '#f4f5f7' }} contentStyle={TOOLTIP} formatter={(v: number, n) => (String(n).includes('%') ? `${v.toFixed(0)}%` : `${v.toFixed(2)} млн ₸`)} />
-        <RBar isAnimationActive={false} yAxisId="l" dataKey="Начислено" fill="#d5dae1" radius={[4, 4, 0, 0]} />
-        <RBar isAnimationActive={false} yAxisId="l" dataKey="Собрано" fill="#00ac6b" radius={[4, 4, 0, 0]} />
-        <Line isAnimationActive={false} yAxisId="r" dataKey="В срок, %" stroke="#11161f" strokeWidth={2.5} dot={false} />
+        <Tooltip cursor={{ fill: COLORS.canvas }} contentStyle={TOOLTIP} formatter={(v: number, n) => (String(n).includes('%') ? `${v.toFixed(0)}%` : `${v.toFixed(2)} млн ₸`)} />
+        <RBar isAnimationActive={false} yAxisId="l" dataKey="Начислено" fill={COLORS.charged} radius={[4, 4, 0, 0]} />
+        <RBar isAnimationActive={false} yAxisId="l" dataKey="Собрано" fill={COLORS.brand} radius={[4, 4, 0, 0]} />
+        <Line isAnimationActive={false} yAxisId="r" dataKey="В срок, %" stroke={COLORS.ink} strokeWidth={2.5} dot={false} />
       </ComposedChart>
     </ResponsiveContainer>
   )
@@ -144,7 +144,7 @@ export function Pager({ pager, onChange, big = false }: { pager: ReturnType<type
           {pageList(page, pages).map((x, i) => x === '…'
             ? <span key={`e${i}`} className="px-1 text-muted">…</span>
             : <button key={x} onClick={() => go(x)} aria-current={x === page ? 'page' : undefined}
-                className={`${btn} ${x === page ? 'bg-ink text-white' : 'hover:bg-canvas'}`}>{x}</button>)}
+                className={`${btn} ${x === page ? 'bg-brand-soft text-brand-dark' : 'hover:bg-canvas'}`}>{x}</button>)}
           <button className={`${btn} hover:bg-canvas`} disabled={page === pages} onClick={() => go(page + 1)} aria-label="Следующая страница"><Icon name="chevron" className="h-4 w-4" /></button>
         </div>
       )}

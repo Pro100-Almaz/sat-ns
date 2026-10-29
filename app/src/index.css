@@ -2,21 +2,27 @@
 
 @theme {
   --font-sans: "Manrope", system-ui, sans-serif;
-  /* SAT Emerald — см. docs/brand-guidelines.md */
-  --color-brand: #00ac6b;
-  --color-brand-strong: #008352; /* кнопки и текст: 4.8:1 с белым */
-  --color-brand-dark: #007a4a;   /* текст на brand-soft: 4.9:1 */
-  --color-brand-soft: #e6f7ef;
-  --color-ink: #11161f;
-  --color-muted: #5b6270; /* 5.9:1 на белом, 5.4:1 на canvas */
-  --color-line: #eceef1;
-  --color-canvas: #f4f5f7;
-  --color-warn: #f5a524;
-  --color-bad: #d1303a; /* 4.9:1 на белом */
-  --color-info: #5b6cff;
+  /* SAT Calm — приглушённый изумруд + нейтрали с лёгким зелёным оттенком (docs/brand-guidelines.md).
+     Значения посчитаны из OKLCH; те же hex лежат в COLORS (src/ui.tsx) для графиков. */
+  --color-brand: #6daf8c;        /* oklch(.70 .085 160) — заливки: бары, прогресс, клетки */
+  --color-brand-strong: #2e7254; /* oklch(.50 .085 162) — главная кнопка, белый текст 5.8:1 */
+  --color-brand-dark: #295f47;   /* oklch(.44 .07 162) — зелёный текст, 6.6:1 на brand-soft */
+  --color-brand-soft: #e3f6eb;   /* oklch(.956 .024 160) — мягкие плашки и выбранное */
+  --color-ink: #212c28;          /* oklch(.28 .016 170) — текст 14:1 */
+  --color-muted: #5b6662;        /* oklch(.50 .016 170) — подписи 6:1 на белом, 5.5:1 на canvas */
+  --color-line: #e2e8e5;         /* oklch(.925 .007 165) */
+  --color-canvas: #f3f7f5;       /* oklch(.972 .005 165) — фон */
+  --color-warn: #e3ba79;         /* oklch(.81 .095 78) — заливки «скоро срок» */
+  --color-warn-ink: #785224;     /* oklch(.47 .08 68) — текст на тинте warn, 5.7:1 */
+  --color-bad: #af5147;          /* oklch(.55 .125 28) — долг, пеня; 5.1:1 на белом */
+  --color-bad-ink: #8f3f37;      /* oklch(.47 .11 28) — текст на тинте bad */
+  --color-info: #6079b0;         /* oklch(.58 .09 265) */
+  --color-gold: #b88a3e;         /* oklch(.66 .10 75) — монеты, серия (иконки) */
 }
-
 body { @apply bg-canvas text-ink antialiased; font-variant-numeric: tabular-nums; }
+/* Phone-first: no grey tap flash (we have our own pressed states), no double-tap zoom delay. */
+button, a, label, summary, [role=switch], [role=radio], [role=tab] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+input, select, textarea { font-size: max(16px, 1em); } /* iOS zooms into inputs under 16px */
 .display { @apply font-extrabold uppercase leading-[1.05] tracking-tight; }
 /* components layer: utilities like bg-ink on a .card must win */
 @layer components {

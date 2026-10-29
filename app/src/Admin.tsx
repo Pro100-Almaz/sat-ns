@@ -5,7 +5,7 @@ import {
   type Ctx,
 } from './model'
 import { useCtx } from './store'
-import { Bar, Logo, pct } from './ui'
+import { Bar, COLORS, Logo, pct } from './ui'
 import { DateBar, ResetDemo, RoleToggle } from './Profile'
 import AdminMobile from './AdminMobile'
 import { AGING_COLORS, kpiItems, CollectionPlot, Dot, FILTERS, PROFILE, aptStatus, mln, overdueCls, sum, useAdminData, useDebtorActions, usePager, Pager, type Data, type Row } from './adminData'
@@ -62,7 +62,7 @@ function TopBar({ cx, setCx }: { cx: number; setCx: (c: number) => void }) {
         <RoleToggle role="admin" />
         <div className="relative">
           <button onClick={() => setMenu(m => !m)} aria-expanded={menu} aria-label="Профиль менеджера"
-            className="grid h-9 w-9 place-items-center rounded-full bg-ink text-xs font-bold text-white">АК</button>
+            className="grid h-9 w-9 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand-dark">АК</button>
           {menu && (
             <div className="animate-rise fixed right-4 top-14 z-50 w-64 rounded-2xl border border-line bg-white p-3 shadow-xl">
               <div className="px-2 pb-2"><div className="font-bold">Алия Касымова</div><div className="text-sm text-muted">Менеджер УК · {APTS.length} квартир</div></div>
@@ -92,7 +92,7 @@ function Kpis({ d, cur }: { d: Data; cur: number }) {
       {items.map(([label, value, sub]) => (
         <div key={label} className="min-w-0 px-5">
           <div className="truncate text-sm font-semibold text-muted">{label}</div>
-          <div className="mt-0.5 text-xl font-extrabold leading-tight 2xl:text-2xl">{value}</div>
+          <div className="mt-0.5 text-xl font-bold leading-tight 2xl:text-2xl">{value}</div>
           <div className="truncate text-[13px] text-muted">{sub}</div>
         </div>
       ))}
@@ -103,7 +103,7 @@ function Kpis({ d, cur }: { d: Data; cur: number }) {
 function CollectionChart({ d }: { d: Data }) {
   return (
     <Panel title="Собираемость" className="h-72 lg:col-span-5 lg:h-auto"
-      aside={<span className="flex gap-3"><Dot c="#d5dae1" l="начислено" /><Dot c="#00ac6b" l="собрано" /><Dot c="#11161f" l="в срок, %" /></span>}>
+      aside={<span className="flex gap-3"><Dot c={COLORS.charged} l="начислено" /><Dot c={COLORS.brand} l="собрано" /><Dot c={COLORS.ink} l="в срок, %" /></span>}>
       <div className="min-h-0 flex-1"><CollectionPlot d={d} /></div>
     </Panel>
   )

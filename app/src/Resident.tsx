@@ -6,12 +6,12 @@ import {
   type Ctx,
 } from './model'
 import { set, useCtx, useStore, type Note } from './store'
-import { Bar, Icon, Sheet, haptic, hashPart, navigate, pct, useHash } from './ui'
+import { Bar, Icon, Sheet, haptic, hashPart, navigate, pct, useHash, useInstall } from './ui'
 import { DatePicker, ResetDemo, RolePicker, Section } from './Profile'
 import Neighbors from './Neighbors'
 
 type Tab = 'home' | 'pays' | 'neighbors' | 'bonus' | 'profile'
-const TONE = { bad: 'bg-bad/10 text-bad', warn: 'bg-warn/15 text-[#8a5a00]', brand: 'bg-brand-soft text-brand-dark' }
+const TONE = { bad: 'bg-bad/10 text-bad-ink', warn: 'bg-warn/25 text-warn-ink', brand: 'bg-brand-soft text-brand-dark' }
 const days = (n: number) => `${n} ${plural(n, 'день', 'дня', 'дней')}`
 const months = (n: number) => `${n} ${plural(n, 'месяц', 'месяца', 'месяцев')}`
 const monthLower = (mk: number) => monthName(mk).split(' ')[0].toLowerCase()
@@ -84,14 +84,14 @@ export default function Resident() {
       {window.self !== window.top && (
         <div className="flex h-10 items-end justify-between px-7 text-[13px] font-bold"><span>9:41</span><span>5G ▮▮▮</span></div>
       )}
-      <header className="flex items-start justify-between px-5 pb-3 pt-5">
+      <header className="flex items-start justify-between px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
         <div>
           <div className="text-[15px] text-muted">{greeting()},</div>
-          <div className="text-2xl font-extrabold">{ME.owner.split(' ')[0]}</div>
+          <div className="text-2xl font-bold">{ME.owner.split(' ')[0]}</div>
         </div>
         <div className="flex items-center gap-2">
         <button onClick={() => go('bonus')} className="flex h-11 items-center gap-1.5 rounded-full bg-white pl-3 pr-4 font-bold transition active:scale-95" aria-label={`SAT-баллы: ${balance}`}>
-          <Icon name="coin" className="h-5 w-5 text-warn" />{balance.toLocaleString('ru-RU')}
+          <Icon name="coin" className="h-5 w-5 text-gold" />{balance.toLocaleString('ru-RU')}
         </button>
         <button className="relative grid h-11 w-11 place-items-center rounded-full bg-white transition active:scale-95" aria-label={`Уведомления${unread ? `, новых: ${unread}` : ''}`} onClick={() => { setBell(true); setSeen(notes.length) }}>
           <Icon name="bell" />
@@ -149,12 +149,12 @@ function Home({ ctx, b, onPay, go }: { ctx: Ctx; b: Bill; onPay: () => void; go:
 function BillCard({ b, onPay, ctx }: { b: Bill; onPay: () => void; ctx: Ctx }) {
   if (!b.items.length)
     return (
-      <section className="card bg-brand-strong p-6 text-white">
-        <div className="flex items-center gap-2 font-semibold"><span className="animate-pop grid h-6 w-6 place-items-center rounded-full bg-white/20"><Icon name="check" className="h-4 w-4" /></span> Счёт за {monthLower(b.cur)} оплачен</div>
-        <div className="mt-3 text-[40px] font-extrabold leading-none">{money(b.bill)}</div>
-        <div className="mt-2 text-[15px] text-white/90">{fmtDate(b.paidAt!)}{b.paidAt! <= b.due ? ' — вовремя, спасибо!' : ''}</div>
-        <div className="mt-5 rounded-2xl bg-white/15 px-4 py-3 text-[15px]">Следующий счёт придёт {fmtDate(issueOf(b.cur + 1))}</div>
-        <div className="mt-3 rounded-2xl bg-white/15 px-4 py-3"><AutopayToggle now={ctx.now} onDark /></div>
+      <section className="card p-6">
+        <div className="flex items-center gap-2 font-semibold text-brand-dark"><span className="animate-pop grid h-7 w-7 place-items-center rounded-full bg-brand-soft"><Icon name="check" className="h-4 w-4" /></span> Счёт за {monthLower(b.cur)} оплачен</div>
+        <div className="mt-3 text-[40px] font-bold leading-none">{money(b.bill)}</div>
+        <div className="mt-2 text-[15px] text-muted">{fmtDate(b.paidAt!)}{b.paidAt! <= b.due ? ' — вовремя, спасибо!' : ''}</div>
+        <div className="mt-5 rounded-2xl bg-canvas px-4 py-3 text-[15px]">Следующий счёт придёт {fmtDate(issueOf(b.cur + 1))}</div>
+        <div className="mt-4 border-t border-line pt-4"><AutopayToggle now={ctx.now} /></div>
       </section>
     )
   const tone = b.overdue ? 'bad' : b.daysLeft <= 5 ? 'warn' : 'brand'
@@ -168,7 +168,7 @@ function BillCard({ b, onPay, ctx }: { b: Bill; onPay: () => void; ctx: Ctx }) {
       </div>
       <div className="mt-2 flex items-center justify-between gap-4">
         <div>
-          <div className="text-[44px] font-extrabold leading-none tracking-tight">{money(b.total)}</div>
+          <div className="text-[44px] font-bold leading-none tracking-tight">{money(b.total)}</div>
           <div className="mt-2 text-[15px] text-muted">
             {b.items.length > 1 ? `${b.items.length} ${plural(b.items.length, 'счёт', 'счёта', 'счетов')}` : `За ${monthLower(b.items[0].mk)}`}
             {pen > 0 ? <> · пеня <b className="text-bad">{money(pen)}</b></> : <> · до {fmtDate(b.due)}</>}
@@ -181,12 +181,12 @@ function BillCard({ b, onPay, ctx }: { b: Bill; onPay: () => void; ctx: Ctx }) {
         ? <p className="mt-3 text-center text-sm text-muted">Погасите долг, чтобы остановить пеню</p>
         : (
           <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[13px] leading-tight">
-            <Perk icon="coin" color="text-warn" top={`+${bonusFor(b)}`} sub={b.daysLeft >= EARLY_DAYS ? 'баллов ×2' : 'баллов'} />
-            <Perk icon="flame" color="text-[#d4a017]" top={`${b.streak + 1} мес.`} sub="серия" />
+            <Perk icon="coin" color="text-gold" top={`+${bonusFor(b)}`} sub={b.daysLeft >= EARLY_DAYS ? 'баллов ×2' : 'баллов'} />
+            <Perk icon="flame" color="text-gold" top={`${b.streak + 1} мес.`} sub="серия" />
             <Perk icon="gift" color="text-brand-strong" top="Розыгрыш" sub="участие" />
           </div>
         )}
-      {!b.overdue && b.daysLeft >= EARLY_DAYS && <p className="mt-2 text-center text-[13px] font-semibold text-[#8a5a00]">Ранняя оплата: двойные баллы ещё {days(b.daysLeft - EARLY_DAYS + 1)}</p>}
+      {!b.overdue && b.daysLeft >= EARLY_DAYS && <p className="mt-2 text-center text-[13px] font-semibold text-warn-ink">Ранняя оплата: двойные баллы ещё {days(b.daysLeft - EARLY_DAYS + 1)}</p>}
       <div className="mt-5 border-t border-line pt-4"><AutopayToggle now={ctx.now} /></div>
       <PenaltyCalc b={b} />
     </section>
@@ -202,7 +202,7 @@ function Countdown({ left, total, tone }: { left: number; total: number; tone: k
         <circle cx="32" cy="32" r={r} fill="none" stroke={`var(--color-${tone})`} strokeWidth="6" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={c * (1 - frac)} className="transition-[stroke-dashoffset] duration-500 ease-out" />
       </svg>
-      <div className="text-center leading-none"><div className="text-xl font-extrabold">{left}</div><div className="mt-0.5 text-xs text-muted">{plural(left, 'день', 'дня', 'дней')}</div></div>
+      <div className="text-center leading-none"><div className="text-xl font-bold">{left}</div><div className="mt-0.5 text-xs text-muted">{plural(left, 'день', 'дня', 'дней')}</div></div>
     </div>
   )
 }
@@ -222,7 +222,7 @@ function ChallengeTile({ ctx, b }: { ctx: Ctx; b: Bill }) {
     <div className="card flex flex-col p-5">
       <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-soft text-brand-dark"><Icon name="users" /></span>
       <span className="mt-3 text-sm font-semibold text-muted">Челлендж подъезда {ME.entrance}</span>
-      <span className="mt-0.5 text-3xl font-extrabold leading-none">{pct(share)}</span>
+      <span className="mt-0.5 text-3xl font-bold leading-none">{pct(share)}</span>
       <span className="mt-1 text-sm text-muted">{done ? 'Цель взята — мойка окон!' : `ещё ${e.need} кв. до ${pct(CHALLENGE_GOAL)}`}</span>
       <span className="relative mt-auto pt-3">
         <Bar value={share} />
@@ -234,26 +234,26 @@ function ChallengeTile({ ctx, b }: { ctx: Ctx; b: Bill }) {
 }
 
 // Один переключатель автоплатежа для карточки счёта, оплаченного счёта и профиля.
-function AutopayToggle({ now, onDark = false }: { now: number; onDark?: boolean }) {
+function AutopayToggle({ now }: { now: number }) {
   const { autopay } = useStore()
   const on = autopay !== null
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1">
         <div className="font-semibold">Автоплатёж</div>
-        <div className={`text-sm ${onDark ? 'text-white/85' : 'text-muted'}`}>{on ? `Включён с ${fmtDate(autopay)} · спишем 20-го с карты •• 4421` : 'Спишем 20-го — без просрочек и пени'}</div>
+        <div className="text-sm text-muted">{on ? `Включён с ${fmtDate(autopay)} · спишем 20-го с карты •• 4421` : 'Спишем 20-го — без просрочек и пени'}</div>
       </div>
-      <Switch on={on} label={on ? 'Выключить автоплатёж' : 'Включить автоплатёж'} onDark={onDark} onChange={v => set({ autopay: v ? now : null })} />
+      <Switch on={on} label={on ? 'Выключить автоплатёж' : 'Включить автоплатёж'} onChange={v => set({ autopay: v ? now : null })} />
     </div>
   )
 }
 
-function Switch({ on, onChange, label, onDark = false }: { on: boolean; onChange: (on: boolean) => void; label: string; onDark?: boolean }) {
+function Switch({ on, onChange, label }: { on: boolean; onChange: (on: boolean) => void; label: string }) {
   return (
     <button role="switch" aria-checked={on} aria-label={label} onClick={() => { haptic(); onChange(!on) }}
       className="-m-1.5 grid h-11 w-16 shrink-0 place-items-center rounded-full">
-      <span className={`block h-8 w-[52px] rounded-full p-1 transition-colors duration-200 ${onDark ? (on ? 'bg-white/90' : 'bg-white/30') : on ? 'bg-brand-strong' : 'bg-line'}`}>
-        <span className={`block h-6 w-6 rounded-full shadow transition-transform duration-200 ease-out ${onDark && on ? 'bg-brand-strong' : 'bg-white'} ${on ? 'translate-x-5' : ''}`} />
+      <span className={`block h-8 w-[52px] rounded-full p-1 transition-colors duration-200 ${on ? 'bg-brand-strong' : 'bg-line'}`}>
+        <span className={`block h-6 w-6 rounded-full shadow transition-transform duration-200 ease-out bg-white ${on ? 'translate-x-5' : ''}`} />
       </span>
     </button>
   )
@@ -302,7 +302,7 @@ function StreakTile({ ctx, b, onClick }: { ctx: Ctx; b: Bill; onClick: () => voi
   return (
     <button onClick={onClick} className="card flex flex-col p-5 text-left transition active:scale-[.98]">
       <span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: lvl.color + '22', color: lvl.color }}><Icon name="flame" /></span>
-      <span className="mt-3 text-3xl font-extrabold leading-none">{b.overdue ? 0 : b.streak}</span>
+      <span className="mt-3 text-3xl font-bold leading-none">{b.overdue ? 0 : b.streak}</span>
       <span className="mt-1 text-sm text-muted">{plural(b.streak, 'месяц', 'месяца', 'месяцев')} без просрочек</span>
       <span className="mt-auto pt-3"><History ctx={ctx} /></span>
       <span className="mt-2 text-sm font-bold" style={{ color: lvl.color }}>{lvl.name} · −{lvl.pct}%</span>
@@ -315,19 +315,19 @@ function Raffle({ ctx, b }: { ctx: Ctx; b: Bill }) {
   const inIt = b.paidAt !== null && b.paidAt <= b.due
   const double = levelOf(b.streak).from >= 6
   return (
-    <section className="card bg-ink p-5 text-white">
+    <section className="card p-5">
       <div className="flex items-start gap-4">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/10"><Icon name="gift" /></span>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-warn/25 text-warn-ink"><Icon name="gift" /></span>
         <div className="flex-1">
-          <div className="text-sm text-white/70">Розыгрыш месяца · итоги {fmtDate(b.due + 1)}</div>
+          <div className="text-sm text-muted">Розыгрыш месяца · итоги {fmtDate(b.due + 1)}</div>
           <div className="mt-0.5 text-lg font-bold leading-snug">3 месяца коммунальных услуг бесплатно</div>
         </div>
       </div>
       <div className="mt-4 flex items-center justify-between gap-2 text-sm">
-        <span className={`chip ${inIt ? 'bg-brand-strong text-white' : 'bg-white/15 text-white'}`}>
+        <span className={`chip ${inIt ? 'bg-brand-soft text-brand-dark' : 'bg-canvas text-ink'}`}>
           {inIt ? `Вы участвуете${double ? ' · шанс ×2' : ''}` : b.daysLeft >= 0 ? `Оплатите до ${fmtDate(b.due)}` : 'Приём закрыт'}
         </span>
-        <span className="text-white/70">{participants} участников</span>
+        <span className="text-muted">{participants} участников</span>
       </div>
     </section>
   )
@@ -437,20 +437,23 @@ function Bonus({ ctx, b, balance }: { ctx: Ctx; b: Bill; balance: number }) {
   const list = badges(ME, ctx, autopay !== null)
   return (
     <>
-      <section className="card p-6 text-white" style={{ background: `linear-gradient(135deg, ${lvl.color}, #11161f 75%)` }}>
-        <div className="text-[15px] text-white/80">Карта жителя</div>
-        <div className="mt-1 text-4xl font-extrabold">{lvl.name}</div>
-        <div className="mt-1 text-[15px] text-white/90">{lvl.perk}</div>
-        <div className="mt-6 flex items-end justify-between">
-          <div><div className="text-sm text-white/70">SAT-баллы</div><div className="flex items-center gap-1.5 text-2xl font-extrabold"><Icon name="coin" className="h-6 w-6 text-warn" />{balance.toLocaleString('ru-RU')}</div></div>
-          <div className="text-right text-sm text-white/80">1 балл = 1 ₸<br />списываются при оплате</div>
+      {/* Soft tint of the level colour instead of a loud gradient; the level reads from the medal + name. */}
+      <section className="card p-6" style={{ background: `color-mix(in oklch, ${lvl.color} 14%, white)` }}>
+        <div className="flex items-center gap-3">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-white" style={{ background: lvl.color }}><Icon name="flame" className="h-6 w-6" /></span>
+          <div><div className="text-[15px] text-muted">Карта жителя</div><div className="text-3xl font-bold">{lvl.name}</div></div>
+        </div>
+        <div className="mt-3 text-[15px]">{lvl.perk}</div>
+        <div className="mt-5 flex items-end justify-between border-t border-ink/10 pt-4">
+          <div><div className="text-sm text-muted">SAT-баллы</div><div className="flex items-center gap-1.5 text-2xl font-bold"><Icon name="coin" className="h-6 w-6 text-gold" />{balance.toLocaleString('ru-RU')}</div></div>
+          <div className="text-right text-sm text-muted">1 балл = 1 ₸<br />списываются при оплате</div>
         </div>
       </section>
       <Section title="Достижения" hint={`${list.filter(x => x.got).length} из ${list.length} получено`}>
         <ul className="grid grid-cols-3 gap-2">
           {list.map(x => (
             <li key={x.name} className={`flex flex-col items-center rounded-2xl p-3 text-center ${x.got ? 'bg-brand-soft' : 'bg-canvas'}`} title={x.hint}>
-              <span className={`grid h-11 w-11 place-items-center rounded-full ${x.got ? 'animate-pop bg-brand-strong text-white' : 'bg-white text-muted'}`}>
+              <span className={`grid h-11 w-11 place-items-center rounded-full ${x.got ? 'animate-pop bg-white text-brand-strong ring-1 ring-brand/50' : 'bg-white text-muted'}`}>
                 <Icon name={x.got ? x.icon : 'lock'} className="h-5 w-5" />
               </span>
               <span className={`mt-2 text-[13px] font-bold leading-tight ${x.got ? 'text-brand-dark' : ''}`}>{x.name}</span>
@@ -499,6 +502,7 @@ function Bonus({ ctx, b, balance }: { ctx: Ctx; b: Bill; balance: number }) {
 
 function Profile() {
   const { now } = useStore()
+  const pwa = useInstall()
   const [perm, setPerm] = useState(pushSupported() ? Notification.permission : 'unsupported')
   const enable = async () => {
     const p = await Notification.requestPermission()
@@ -508,7 +512,7 @@ function Profile() {
   return (
     <>
       <section className="card flex items-center gap-4 p-5">
-        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-ink text-lg font-bold text-white">{ME.owner.split(' ').map(w => w[0]).join('')}</div>
+        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brand-soft text-lg font-bold text-brand-dark">{ME.owner.split(' ').map(w => w[0]).join('')}</div>
         <div className="min-w-0">
           <div className="text-lg font-bold">{ME.owner}</div>
           <div className="text-sm text-muted">{COMPLEXES[ME.complex]}, корп. {ME.building}, кв. {ME.number} · {ME.area} м²</div>
@@ -520,6 +524,13 @@ function Profile() {
       <Section title="Оплата и уведомления">
         <ul className="divide-y divide-line">
           <li className="pb-3"><AutopayToggle now={now} /></li>
+          {!pwa.standalone && (
+            <li className="flex items-center justify-between gap-3 py-3">
+              <span>Приложение на экране «Домой»</span>
+              {pwa.canPrompt ? <button onClick={pwa.install} className="h-11 rounded-xl bg-brand-soft px-4 font-semibold text-brand-dark">Установить</button>
+                : <span className="text-right text-sm text-muted">{pwa.ios ? '«Поделиться» → «На экран Домой»' : 'через меню браузера'}</span>}
+            </li>
+          )}
           <li className="flex items-center justify-between gap-3 pt-3">
             <span>Push-напоминания</span>
             {perm === 'granted' ? <span className="font-semibold text-brand-dark">включены</span>
@@ -557,8 +568,8 @@ function PaySheet({ b, balance, onClose }: { b: Bill; balance: number; onClose: 
     return (
       <Sheet onClose={onClose} title="Оплата прошла">
         <div className="pb-2 pt-4 text-center">
-          <div className="animate-pop mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand-strong text-white"><Icon name="check" className="h-10 w-10" /></div>
-          <div className="mt-5 text-3xl font-extrabold">{money(toPay)}</div>
+          <div className="animate-pop mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand-soft text-brand-strong"><Icon name="check" className="h-10 w-10" /></div>
+          <div className="mt-5 text-3xl font-bold">{money(toPay)}</div>
           <p className="mt-1 text-muted">{METHODS[method]}{used > 0 ? ` + ${points(used)}` : ''} · квитанция в истории</p>
           {!snap.overdue
             ? <div className="mt-5 space-y-1 rounded-2xl bg-brand-soft p-4 text-left text-brand-dark"><div>Серия: <b>{months(snap.streak + 1)}</b> без просрочек</div><div>Вы участвуете в розыгрыше месяца</div>{bonus > 0 && <div>Начислено <b>+{points(bonus)}</b></div>}</div>
@@ -577,7 +588,7 @@ function PaySheet({ b, balance, onClose }: { b: Bill; balance: number; onClose: 
       </ul>
       {balance > 0 && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl bg-warn/10 p-3.5">
-          <Icon name="coin" className="h-6 w-6 shrink-0 text-warn" />
+          <Icon name="coin" className="h-6 w-6 shrink-0 text-gold" />
           <div className="flex-1"><div className="font-semibold">Списать баллы</div><div className="text-sm text-muted">{usePts ? `Списываем ${points(used)}` : `Доступно ${points(balance)} — до −${money(Math.min(balance, snap.total))}`}</div></div>
           <Switch on={usePts} label="Списать баллы" onChange={setUsePts} />
         </div>

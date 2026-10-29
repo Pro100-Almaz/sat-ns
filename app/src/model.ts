@@ -151,10 +151,10 @@ export function streak(a: Apt, ctx: Ctx) {
 }
 
 export const LEVELS = [
-  { name: 'Bronze', pct: 3, from: 0, color: '#B7794B', perk: 'Скидка 3% у партнёров ЖК' },
-  { name: 'Silver', pct: 7, from: 3, color: '#8A94A6', perk: 'Скидка 7% + приоритет по заявкам' },
-  { name: 'Gold', pct: 12, from: 6, color: '#D4A017', perk: 'Скидка 12% + двойной шанс в розыгрыше' },
-  { name: 'Platinum', pct: 15, from: 12, color: '#5B6CFF', perk: 'Скидка 15% + бесплатная мойка авто раз в месяц' },
+  { name: 'Bronze', pct: 3, from: 0, color: '#a87b5d', perk: 'Скидка 3% у партнёров ЖК' },
+  { name: 'Silver', pct: 7, from: 3, color: '#7d8792', perk: 'Скидка 7% + приоритет по заявкам' },
+  { name: 'Gold', pct: 12, from: 6, color: '#c1a057', perk: 'Скидка 12% + двойной шанс в розыгрыше' },
+  { name: 'Platinum', pct: 15, from: 12, color: '#6878aa', perk: 'Скидка 15% + бесплатная мойка авто раз в месяц' },
 ]
 export const levelOf = (s: number) => [...LEVELS].reverse().find(l => s >= l.from)!
 

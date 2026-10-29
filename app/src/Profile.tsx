@@ -6,7 +6,11 @@ import { Icon } from './ui'
 export type Role = 'app' | 'admin'
 
 // The resident app may run inside the phone mockup (iframe): switch the whole page, not the frame.
-export const goRole = (r: Role) => { (window.top ?? window).location.hash = `#/${r}` }
+export const ROLE_KEY = 'sat-role'
+export const goRole = (r: Role) => {
+  try { localStorage.setItem(ROLE_KEY, r) } catch { /* private mode */ }
+  ;(window.top ?? window).location.hash = `#/${r}`
+}
 
 export function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
@@ -105,7 +109,7 @@ export function DatePicker() {
       <div className="mt-3 flex flex-wrap gap-2">
         {presets.map(([label, d]) => (
           <button key={label} onClick={() => set({ now: d })}
-            className={`h-11 rounded-full px-4 text-sm font-semibold transition ${now === d ? 'bg-ink text-white' : 'bg-canvas hover:bg-line'}`}>
+            className={`h-11 rounded-full px-4 text-sm font-semibold transition ${now === d ? 'bg-brand-soft text-brand-dark ring-1 ring-brand/50' : 'bg-canvas hover:bg-line'}`}>
             {label}
           </button>
         ))}

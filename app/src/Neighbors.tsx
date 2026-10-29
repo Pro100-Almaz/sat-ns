@@ -83,7 +83,7 @@ function Overview({ h, now, go }: { h: House; now: number; go: (t: string) => vo
         <ul className="mt-4 space-y-2">
           {([[h.chief, 'Старший по подъезду'], [h.deputy, 'Заместитель']] as const).map(([a, role]) => (
             <li key={a.id} className="flex items-center gap-3 rounded-2xl bg-canvas p-3">
-              <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-bold ${a === h.chief ? 'bg-brand-strong text-white' : 'bg-white'}`}>{initials(a)}</span>
+              <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-bold ${a === h.chief ? 'bg-brand-soft text-brand-dark' : 'bg-white'}`}>{initials(a)}</span>
               <span className="min-w-0 flex-1">
                 <span className="block font-bold">{a.owner}</span>
                 <span className="block text-sm text-muted">{role} · кв. {a.number}</span>
@@ -118,7 +118,7 @@ function Overview({ h, now, go }: { h: House; now: number; go: (t: string) => vo
                 <span className="block text-sm text-muted">{a.floor} этаж · кв. {a.number}</span>
               </span>
               <button onClick={() => sayHi(a)} aria-label={`Помахать: ${a.owner}`}
-                className={`grid h-11 w-11 place-items-center rounded-full transition ${wave === a.id ? 'animate-pop bg-brand-soft text-brand-dark' : 'bg-canvas text-[#b7791f] active:scale-95'}`}>
+                className={`grid h-11 w-11 place-items-center rounded-full transition ${wave === a.id ? 'animate-pop bg-brand-soft text-brand-dark' : 'bg-canvas text-gold active:scale-95'}`}>
                 <Icon name={wave === a.id ? 'check' : 'hand'} className="h-5 w-5" />
               </button>
               <button onClick={() => go(dm(a))} className="grid h-11 w-11 place-items-center rounded-full bg-canvas text-ink transition active:scale-95" aria-label={`Написать: ${a.owner}`}>
@@ -210,14 +210,14 @@ function Thread({ thread, h, now, onBack }: { thread: string; h: House; now: num
                 {!mine && !peer && <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-xs font-bold">{initials(author)}</span>}
                 <div className={`max-w-[78%] ${mine ? 'items-end' : 'items-start'} flex flex-col`}>
                   <button onClick={() => setPicker(picker === m.id ? null : m.id)} aria-label="Реакция на сообщение"
-                    className={`rounded-3xl px-4 py-2.5 text-left text-[15px] leading-snug ${mine ? 'rounded-br-lg bg-brand-strong text-white' : 'rounded-bl-lg bg-white'}`}>
+                    className={`rounded-3xl px-4 py-2.5 text-left text-[15px] leading-snug ${mine ? 'rounded-br-lg bg-brand-soft' : 'rounded-bl-lg bg-white'}`}>
                     {!mine && !peer && (
                       <span className="mb-0.5 block text-[13px] font-bold text-brand-dark">
                         {shortName(author)}{author === h.chief ? ' · старший' : author === h.deputy ? ' · зам.' : ''}
                       </span>
                     )}
                     {m.text}
-                    <span className={`ml-2 align-bottom text-xs ${mine ? 'text-white/75' : 'text-muted'}`}>{m.time}</span>
+                    <span className="ml-2 align-bottom text-xs text-muted">{m.time}</span>
                   </button>
                   {picker === m.id && (
                     <div className="animate-pop mt-1 flex gap-1 rounded-full bg-white p-1 shadow-lg" role="group" aria-label="Выберите реакцию">

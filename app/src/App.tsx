@@ -2,7 +2,8 @@ import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from 're
 import Resident from './Resident'
 import { useCtx } from './store'
 import { APTS, channel, monthOf, paidOn, periodStats } from './model'
-import { Icon, Logo, Phone, SlideLabel, pct, useHash } from './ui'
+import { Icon, Logo, Phone, SlideLabel, pct, useHash, useInstall } from './ui'
+import { ROLE_KEY, goRole, type Role } from './Profile'
 
 // Recharts lives only in the admin bundle, so the resident app stays light on phones.
 const Admin = lazy(() => import('./Admin'))
@@ -147,12 +148,51 @@ function ResidentStage() {
   )
 }
 
+// Phone start: users mostly arrive on a phone, so instead of the presentation page they get a role choice
+// (the last one is remembered) and a way to install the app.
+function PhoneStart() {
+  const last = (() => { try { return localStorage.getItem(ROLE_KEY) as Role | null } catch { return null } })()
+  const { standalone, ios, canPrompt, install } = useInstall()
+  const roles: [Role, 'home' | 'chart', string, string][] = [
+    ['app', 'home', 'Я житель', 'Счета, оплата, бонусы и чат соседей'],
+    ['admin', 'chart', 'Я из управляющей компании', 'Сборы, должники и напоминания'],
+  ]
+  return (
+    <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-[calc(env(safe-area-inset-top)+2rem)]">
+      <Logo />
+      <h1 className="mt-12 text-[28px] font-bold leading-tight">Коммунальные платежи вашего дома</h1>
+      <p className="mt-3 text-[17px] text-muted">Счёт и срок оплаты всегда под рукой. Платите в один тап и получайте бонусы за оплату вовремя.</p>
+
+      <div className="mt-auto space-y-3 pt-10">
+        {roles.map(([r, icon, title, sub]) => {
+          const primary = (last ?? 'app') === r
+          return (
+            <button key={r} onClick={() => goRole(r)}
+              className={`flex min-h-[76px] w-full items-center gap-4 rounded-3xl p-4 text-left transition active:scale-[.99] ${primary ? 'bg-white ring-2 ring-brand/60' : 'bg-white/70'}`}>
+              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${primary ? 'bg-brand-soft text-brand-dark' : 'bg-canvas text-muted'}`}><Icon name={icon} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[17px] font-bold">{title}</span>
+                <span className="block text-sm text-muted">{last === r ? 'Продолжить с того же места' : sub}</span>
+              </span>
+              <Icon name="chevron" className="h-5 w-5 shrink-0 text-muted" />
+            </button>
+          )
+        })}
+        {!standalone && (canPrompt
+          ? <button onClick={install} className="h-12 w-full rounded-2xl font-semibold text-brand-strong transition active:bg-brand-soft">Установить как приложение</button>
+          : <p className="px-2 pt-1 text-center text-sm text-muted">{ios ? 'Чтобы открывать как приложение: «Поделиться» → «На экран Домой».' : 'Можно установить как приложение через меню браузера.'}</p>)}
+        <p className="px-2 text-center text-xs text-muted">Демо-версия: все данные условные.</p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const h = useHash(), wide = useWide()
   const route = h.startsWith('#/app') ? 'app' : h.startsWith('#/admin') ? 'admin' : 'home'
   return (
     <>
-      {route === 'app' ? (wide && !EMBED ? <ResidentStage /> : <Resident />) : route === 'admin' ? <Suspense><Admin /></Suspense> : <Landing />}
+      {route === 'app' ? (wide && !EMBED ? <ResidentStage /> : <Resident />) : route === 'admin' ? <Suspense><Admin /></Suspense> : wide ? <Landing /> : <PhoneStart />}
     </>
   )
 }

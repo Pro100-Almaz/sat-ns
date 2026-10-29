@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { APTS, BUILDINGS, COMPLEXES, ENTRANCES, FLOORS, debts, dueOf, fmtDate, money, monthName, paidOn, periodStats, plural, reps } from './model'
 import { useCtx, useStore } from './store'
-import { Bar, Icon, Sheet, haptic, hashPart, navigate, pct, useHash } from './ui'
+import { Bar, COLORS, Icon, Sheet, haptic, hashPart, navigate, pct, useHash } from './ui'
 import { DatePicker, ResetDemo, RolePicker } from './Profile'
 import { AGING_COLORS, CollectionPlot, Dot, FILTERS, PROFILE, aptStatus, kpiItems, mln, overdueCls, sum, useAdminData, useDebtorActions, usePager, Pager } from './adminData'
 
@@ -30,7 +30,7 @@ export default function AdminMobile() {
     <div className="mx-auto min-h-screen max-w-2xl" style={{ paddingBottom: `calc(${bar ? '9.5rem' : '6.5rem'} + env(safe-area-inset-bottom))` }}>
       <header className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-3">
-          <a href="#/" aria-label="На обзор" className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 font-extrabold">
+          <a href="#/" aria-label="На обзор" className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 font-bold">
             <img src="/icon.svg" alt="" className="h-8 w-8 rounded-lg" /><span className="hidden min-[430px]:inline">SAT Admin</span>
           </a>
           <button onClick={() => setSheet('cx')} aria-haspopup="dialog" aria-label={`Жилой комплекс: ${cx < 0 ? 'все' : COMPLEXES[cx]}`}
@@ -42,7 +42,7 @@ export default function AdminMobile() {
             <Icon name="calendar" className="h-4 w-4 text-muted" />{fmtDate(now)}
           </button>
           <button onClick={() => go('profile')} aria-label="Профиль менеджера"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-white transition active:scale-95">АК</button>
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand-dark transition active:scale-95">АК</button>
         </div>
       </header>
       <div className="h-[calc(3.5rem+env(safe-area-inset-top))]" />
@@ -116,13 +116,13 @@ function Overview({ d, cur, cx, setCx, ctx, openHouse }: { d: D; cur: number; cx
         {kpiItems(d, cur).map(([label, value, sub], i) => (
           <div key={label} className={`card p-4 ${i === 4 ? 'col-span-2' : ''}`}>
             <div className="text-[13px] font-semibold leading-snug text-muted">{label}</div>
-            <div className="mt-1 text-[22px] font-extrabold leading-tight">{value}</div>
+            <div className="mt-1 text-[22px] font-bold leading-tight">{value}</div>
             <div className="mt-0.5 text-[13px] leading-snug text-muted">{sub}</div>
           </div>
         ))}
       </section>
 
-      <Panel title="Собираемость" aside={<span className="flex flex-wrap gap-x-3 gap-y-1"><Dot c="#d5dae1" l="начислено" /><Dot c="#00ac6b" l="собрано" /><Dot c="#11161f" l="в срок, %" /></span>}>
+      <Panel title="Собираемость" aside={<span className="flex flex-wrap gap-x-3 gap-y-1"><Dot c={COLORS.charged} l="начислено" /><Dot c={COLORS.brand} l="собрано" /><Dot c={COLORS.ink} l="в срок, %" /></span>}>
         <div className="-mx-2 h-[220px]"><CollectionPlot d={d} /></div>
       </Panel>
 
@@ -187,7 +187,7 @@ function Debtors({ d, act }: { d: D; act: ReturnType<typeof useDebtorActions> })
             <li key={r.a.id}>
               <button onClick={() => toggle(r.a.id)} aria-pressed={on}
                 className={`card flex w-full gap-3 border-2 p-4 text-left transition-colors ${on ? 'border-brand-strong bg-brand-soft/60' : 'border-transparent'}`}>
-                <span className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${on ? 'border-brand-strong bg-brand-strong text-white' : 'border-[#8d94a1]'}`}>
+                <span className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${on ? 'border-brand-strong bg-brand-strong text-white' : 'border-muted/60'}`}>
                   {on && <Icon name="check" className="h-4 w-4" />}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -227,11 +227,11 @@ function ActionBar({ act, list, all }: { act: ReturnType<typeof useDebtorActions
   )
 }
 
-const chip = (on: boolean) => `h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${on ? 'bg-ink text-white' : 'bg-canvas'}`
+const chip = (on: boolean) => `h-11 rounded-xl px-4 text-sm font-semibold transition-colors ${on ? 'bg-brand-soft text-brand-dark ring-1 ring-brand/50' : 'bg-canvas'}`
 
 // Cells carry the apartment number, so each status colour gets a text colour that stays readable.
 const CELL: Record<string, string> = {
-  'bg-brand': 'bg-brand-strong text-white', 'bg-line': 'bg-line text-ink', 'bg-warn': 'bg-warn text-ink', 'bg-bad': 'bg-bad text-white',
+  'bg-brand': 'bg-brand/30 text-brand-dark', 'bg-line': 'bg-line text-muted', 'bg-warn': 'bg-warn/35 text-warn-ink', 'bg-bad': 'bg-bad/15 text-bad-ink',
 }
 
 // Дом на телефоне: ЖК берётся из фильтра в шапке, подъезды — по одному, чтобы клетки были крупными.
@@ -311,7 +311,7 @@ function House({ ctx, cur, cx, setCx, pick, setPick }: {
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-x-3.5 gap-y-1.5 text-[13px] text-muted">
-          {[['bg-brand-strong', 'оплачено ✓'], ['bg-line', `ждём до ${fmtDate(dueOf(cur))}`], ['bg-warn', 'долг до 30 дн. !'], ['bg-bad', 'долг 30+ дн. !']].map(([cl, l]) => (
+          {[['bg-brand/30', 'оплачено ✓'], ['bg-line', `ждём до ${fmtDate(dueOf(cur))}`], ['bg-warn/35', 'долг до 30 дн. !'], ['bg-bad/15', 'долг 30+ дн. !']].map(([cl, l]) => (
             <span key={l} className="flex items-center gap-1.5"><span className={`h-3 w-3 rounded-sm ${cl}`} />{l}</span>
           ))}
           <span className="flex items-center gap-1.5"><span className="grid h-5 w-5 place-items-center rounded-full bg-ink text-xs text-white">С</span>старший / зам.</span>
@@ -328,8 +328,8 @@ function ProfileView() {
   return (
     <>
       <section className="card flex items-center gap-4 p-5">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-ink font-bold text-white">АК</span>
-        <div><div className="text-lg font-extrabold">Алия Касымова</div><div className="text-[15px] text-muted">Менеджер УК · {APTS.length} квартир</div></div>
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brand-soft font-bold text-brand-dark">АК</span>
+        <div><div className="text-lg font-bold">Алия Касымова</div><div className="text-[15px] text-muted">Менеджер УК · {APTS.length} квартир</div></div>
       </section>
       <RolePicker role="admin" />
       <DatePicker />
